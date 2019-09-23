@@ -58,8 +58,11 @@ func newClients(nodes []*Node) (clients Clients) {
 func (c Clients) Names() (names []string) {
 	names = make([]string, 0, len(c.clients))
 
-	for key := range c.clients {
-		names = append(names, key)
+	for key, count := range c.clients {
+		for count > 0 {
+			names = append(names, key)
+			count--
+		}
 	}
 
 	sort.Strings(names)

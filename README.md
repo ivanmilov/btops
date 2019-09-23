@@ -35,7 +35,7 @@ Below are the different configuration options available.  Please look at [exampl
 | remove-empty | Bool | Removes empty desktops | true |
 | append-when-occupied | Bool | Appends a new desktop when all other desktops are occupied | true |
 | watch-config | Bool | Reload btops on next event when configuration changes | true |
-| renamers | []String | Order of [renamers](#renamers) to use for renaming desktops. If a given renamer is unable to rename a desktop, it cascades to the next renmaer | ["numeric"]
+| renamers | []String | Order of [renamers](#renamers) to use for renaming desktops. If a given renamer is unable to rename a desktop, it cascades to the next renamer | ["numeric"]
 | names | Names | [Names configuration object](#names) | {} |
 
 ### Renamers

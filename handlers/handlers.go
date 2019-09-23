@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"log"
-	"math"
 	"strconv"
 	"strings"
 
@@ -265,7 +264,8 @@ func (c clientRenamer) CanRename(desktop *monitors.Desktop, desktopIdx int) bool
 	return len(desktop.Clients().Names()) > 0
 }
 func (c clientRenamer) Rename(desktop *monitors.Desktop, desktopIdx int) bool {
-	name := strings.Join(desktop.Clients().Names(), " ")
+	name := strconv.Itoa(desktopIdx+1) + " "
+	name += strings.Join(desktop.Clients().Names(), " ")
 
 	if desktop.Name == name {
 		return false
@@ -327,24 +327,22 @@ func (c classifiedRenamer) CanRename(desktop *monitors.Desktop, desktopIdx int) 
 }
 
 func (c classifiedRenamer) Rename(desktop *monitors.Desktop, desktopIdx int) bool {
-	toRename := classification{priority: math.MaxInt64}
+	classifiedName := strconv.Itoa(desktopIdx + 1)
 
 	for _, name := range desktop.Clients().Names() {
 		class, ok := c.priorityMap[name]
 		if !ok {
-			continue
-		}
-
-		if class.priority < toRename.priority {
-			toRename = class
+			classifiedName += " " + name
+		} else {
+			classifiedName += " " + class.name
 		}
 	}
 
-	if desktop.Name == toRename.name {
+	if desktop.Name == classifiedName {
 		return false
 	}
 
-	err := desktop.Rename(toRename.name)
+	err := desktop.Rename(classifiedName)
 	if err != nil {
 		log.Println("Unable to rename desktop: ", desktop.Name, err)
 		return false
