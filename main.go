@@ -1,12 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"log"
+	"os/exec"
 
-	"github.com/cmschuetz/btops/config"
-	"github.com/cmschuetz/btops/handlers"
-	"github.com/cmschuetz/btops/ipc"
-	"github.com/cmschuetz/btops/monitors"
+	"github.com/roberteinhaus/btops/config"
+	"github.com/roberteinhaus/btops/handlers"
+	"github.com/roberteinhaus/btops/monitors"
 )
 
 func main() {
@@ -25,13 +26,28 @@ func listen() {
 
 	handlers := handlers.NewHandlers(c)
 
-	sub, err := ipc.NewSubscriber()
+	bspc_sub := exec.Command("bspc", "subscribe", "report")
+	bspcReader, err := bspc_sub.StdoutPipe()
+
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer sub.Close()
 
-	for !c.ConfigChanged() && sub.Scanner.Scan() {
+	scanner := bufio.NewScanner(bspcReader)
+
+	err = bspc_sub.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	go func() {
+		err = bspc_sub.Wait()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	for !c.ConfigChanged() && scanner.Scan() {
 		monitors, err := monitors.GetMonitors()
 		if err != nil {
 			log.Println("Unable to obtain monitors:", err)
