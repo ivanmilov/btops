@@ -192,8 +192,10 @@ func (r RenameHandler) ShouldHandle() bool {
 }
 
 func (r RenameHandler) Handle(m *monitors.Monitors) bool {
+	i := -1
 	for _, monitor := range *m {
-		for i, desktop := range monitor.Desktops {
+		for _, desktop := range monitor.Desktops {
+			i++
 			for _, renamer := range r.renamers {
 				if !renamer.CanRename(&desktop, i) {
 					continue
