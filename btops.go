@@ -1,13 +1,12 @@
 package main
 
 import (
+	"btops/config"
+	"btops/handlers"
+	"btops/monitors"
 	"bufio"
 	"log"
 	"os/exec"
-
-	"github.com/roberteinhaus/btops/config"
-	"github.com/roberteinhaus/btops/handlers"
-	"github.com/roberteinhaus/btops/monitors"
 )
 
 func main() {
@@ -48,7 +47,7 @@ func listen() {
 	}()
 
 	for !c.ConfigChanged() && scanner.Scan() {
-		monitors, err := monitors.GetMonitors()
+		monitors, err := monitors.GetMonitors(c.IgnoreMons)
 		if err != nil {
 			log.Println("Unable to obtain monitors:", err)
 		}

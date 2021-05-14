@@ -29,6 +29,9 @@ type Config struct {
 	configChangeC      chan bool
 	Renamers           []string
 	Names              names
+	MaxLength          int      `mapstructure:"max-length"`
+	IgnoreMons         []string `mapstructure:"ignore-mons"`
+	IgnoreClients      []string `mapstructure:"ignore-clients"`
 }
 
 type names struct {
@@ -88,10 +91,13 @@ func newDefaultConfig() *viper.Viper {
 
 	c.SetDefault("min", 1)
 	c.SetDefault("max", math.MaxInt64)
-	c.SetDefault("remove-empty", true)
-	c.SetDefault("append-when-occupied", true)
+	c.SetDefault("remove-empty", false)
+	c.SetDefault("append-when-occupied", false)
 	c.SetDefault("renamers", []string{numeric})
 	c.SetDefault("watch-config", true)
+	c.SetDefault("max-length", 30)
+	c.SetDefault("ignore-mons", []string{})
+	c.SetDefault("ignore-clients", []string{})
 
 	return c
 }

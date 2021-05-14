@@ -1,11 +1,11 @@
 package monitors
 
 import (
+	"btops/ipc"
 	"encoding/json"
+	"log"
 	"sort"
 	"strconv"
-
-	"github.com/roberteinhaus/btops/ipc"
 )
 
 type bspwmState struct {
@@ -69,7 +69,17 @@ func (c Clients) Names() (names []string) {
 	return names
 }
 
-func GetMonitors() (*Monitors, error) {
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
+}
+
+func GetMonitors(ignore []string) (*Monitors, error) {
 	jsonState, err := ipc.Send("wm", "-d")
 	if err != nil {
 		return nil, err
@@ -79,6 +89,17 @@ func GetMonitors() (*Monitors, error) {
 	if err = json.Unmarshal(jsonState, &state); err != nil {
 		return nil, err
 	}
+
+	var ms Monitors
+	for _, m := range state.Monitors {
+		if contains(ignore, m.Name) {
+			log.Println("Ignore monitor", m.Name)
+			continue
+		}
+		ms = append(ms, m)
+	}
+
+	state.Monitors = ms
 
 	return &state.Monitors, nil
 }
@@ -116,7 +137,7 @@ func (d *Desktop) Rename(name string) error {
 }
 
 func (m *Monitor) AppendDesktop(name string) error {
-	if _, err := ipc.Send("monitor", m.Name, "-a", name); err != nil {
+	if _, err := ipc.Send("monitor", strconv.Itoa(m.Id), "-a", name); err != nil {
 		return err
 	}
 

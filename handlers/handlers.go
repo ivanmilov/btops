@@ -1,12 +1,11 @@
 package handlers
 
 import (
+	"btops/config"
+	"btops/monitors"
 	"log"
 	"strconv"
 	"strings"
-
-	"github.com/roberteinhaus/btops/config"
-	"github.com/roberteinhaus/btops/monitors"
 )
 
 type baseHandler struct {
@@ -30,7 +29,9 @@ type Renamer interface {
 
 type constantRenamer struct{ name string }
 type staticRenamer struct{ names []string }
-type clientRenamer struct{}
+type clientRenamer struct {
+	max_length int
+}
 type numericRenamer struct{}
 type classifiedRenamer struct {
 	priorityMap map[string]classification
@@ -115,13 +116,13 @@ func (a AppendHandler) Handle(m *monitors.Monitors) bool {
 			continue
 		}
 
-		err := monitor.AppendDesktop("")
+		err := monitor.AppendDesktop(strconv.Itoa(dCount + 1))
 		if err != nil {
 			log.Println("Unable to append desktop to monitor: ", monitor.Name, err)
 			continue
 		}
 
-		return true
+		// return true
 	}
 
 	return false
@@ -148,7 +149,7 @@ func (r RemoveHandler) Handle(m *monitors.Monitors) bool {
 				continue
 			}
 
-			return true
+			// return true
 		}
 	}
 
@@ -194,6 +195,7 @@ func (r RenameHandler) ShouldHandle() bool {
 func (r RenameHandler) Handle(m *monitors.Monitors) bool {
 	i := -1
 	for _, monitor := range *m {
+		i = -1
 		for _, desktop := range monitor.Desktops {
 			i++
 			for _, renamer := range r.renamers {
@@ -261,13 +263,17 @@ func (s staticRenamer) Rename(desktop *monitors.Desktop, desktopIdx int) bool {
 	return true
 }
 
-func (c *clientRenamer) Initialize(conf *config.Config) {}
+func (c *clientRenamer) Initialize(conf *config.Config) { c.max_length = conf.MaxLength }
 func (c clientRenamer) CanRename(desktop *monitors.Desktop, desktopIdx int) bool {
 	return len(desktop.Clients().Names()) > 0
 }
 func (c clientRenamer) Rename(desktop *monitors.Desktop, desktopIdx int) bool {
 	name := strconv.Itoa(desktopIdx+1) + " "
 	name += strings.Join(desktop.Clients().Names(), " ")
+
+	if len(name) > c.max_length {
+		name = name[:c.max_length/2] + ".." + name[len(name)-3:]
+	}
 
 	if desktop.Name == name {
 		return false
