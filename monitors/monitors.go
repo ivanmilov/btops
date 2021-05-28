@@ -6,6 +6,8 @@ import (
 	"log"
 	"sort"
 	"strconv"
+
+	"github.com/mpvl/unique"
 )
 
 type bspwmState struct {
@@ -55,7 +57,7 @@ func newClients(nodes []*Node) (clients Clients) {
 	return clients
 }
 
-func (c Clients) Names() (names []string) {
+func (c Clients) Names(unique_names bool) (names []string) {
 	names = make([]string, 0, len(c.clients))
 
 	for key, count := range c.clients {
@@ -66,6 +68,10 @@ func (c Clients) Names() (names []string) {
 	}
 
 	sort.Strings(names)
+
+	if unique_names {
+		unique.Strings(&names)
+	}
 	return names
 }
 

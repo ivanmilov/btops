@@ -32,6 +32,7 @@ type Config struct {
 	MaxLength          int      `mapstructure:"max-length"`
 	IgnoreMons         []string `mapstructure:"ignore-mons"`
 	IgnoreClients      []string `mapstructure:"ignore-clients"`
+	UniqueName         bool     `mapstructure:"unique-name"`
 }
 
 type names struct {
@@ -98,6 +99,7 @@ func newDefaultConfig() *viper.Viper {
 	c.SetDefault("max-length", 30)
 	c.SetDefault("ignore-mons", []string{})
 	c.SetDefault("ignore-clients", []string{})
+	c.SetDefault("unique-name", false)
 
 	return c
 }

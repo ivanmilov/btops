@@ -3,6 +3,7 @@ package handlers
 import (
 	"btops/config"
 	"btops/monitors"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -30,11 +31,13 @@ type Renamer interface {
 type constantRenamer struct{ name string }
 type staticRenamer struct{ names []string }
 type clientRenamer struct {
-	max_length int
+	max_length  int
+	unique_name bool
 }
 type numericRenamer struct{}
 type classifiedRenamer struct {
 	priorityMap map[string]classification
+	unique_name bool
 }
 
 type classification struct {
@@ -263,18 +266,25 @@ func (s staticRenamer) Rename(desktop *monitors.Desktop, desktopIdx int) bool {
 	return true
 }
 
-func (c *clientRenamer) Initialize(conf *config.Config) { c.max_length = conf.MaxLength }
+func (c *clientRenamer) Initialize(conf *config.Config) {
+	c.max_length = conf.MaxLength
+	c.unique_name = conf.UniqueName
+}
 func (c clientRenamer) CanRename(desktop *monitors.Desktop, desktopIdx int) bool {
-	return len(desktop.Clients().Names()) > 0
+	return len(desktop.Clients().Names(false)) > 0
 }
 func (c clientRenamer) Rename(desktop *monitors.Desktop, desktopIdx int) bool {
 	name := strconv.Itoa(desktopIdx+1) + " "
-	name += strings.Join(desktop.Clients().Names(), " ")
 
-	if len(name) > c.max_length {
-		name = name[:c.max_length/2] + ".." + name[len(name)-3:]
+	client_names := strings.Join(desktop.Clients().Names(c.unique_name), " ")
+	if len(client_names) > c.max_length {
+		runes := []rune(client_names)
+		if len(runes) > c.max_length {
+			client_names = fmt.Sprintf("%s..%s", string(runes[:c.max_length/2]), string(runes[len(runes)-c.max_length/2:]))
+		}
 	}
 
+	name += client_names
 	if desktop.Name == name {
 		return false
 	}
@@ -310,6 +320,7 @@ func (n numericRenamer) Rename(desktop *monitors.Desktop, desktopIdx int) bool {
 
 func (c *classifiedRenamer) Initialize(conf *config.Config) {
 	c.priorityMap = make(map[string]classification)
+	c.unique_name = conf.UniqueName
 	priority := 0
 
 	for _, classMap := range conf.Names.Classified {
@@ -325,7 +336,7 @@ func (c *classifiedRenamer) Initialize(conf *config.Config) {
 }
 
 func (c classifiedRenamer) CanRename(desktop *monitors.Desktop, desktopIdx int) bool {
-	for _, name := range desktop.Clients().Names() {
+	for _, name := range desktop.Clients().Names(true) {
 		if _, ok := c.priorityMap[name]; ok {
 			return true
 		}
@@ -337,7 +348,7 @@ func (c classifiedRenamer) CanRename(desktop *monitors.Desktop, desktopIdx int) 
 func (c classifiedRenamer) Rename(desktop *monitors.Desktop, desktopIdx int) bool {
 	classifiedName := strconv.Itoa(desktopIdx + 1)
 
-	for _, name := range desktop.Clients().Names() {
+	for _, name := range desktop.Clients().Names(c.unique_name) {
 		class, ok := c.priorityMap[name]
 		if !ok {
 			classifiedName += " " + name
