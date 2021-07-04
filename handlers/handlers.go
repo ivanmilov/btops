@@ -33,11 +33,13 @@ type staticRenamer struct{ names []string }
 type clientRenamer struct {
 	max_length  int
 	unique_name bool
+	ignore      []string
 }
 type numericRenamer struct{}
 type classifiedRenamer struct {
 	priorityMap map[string]classification
 	unique_name bool
+	ignore      []string
 }
 
 type classification struct {
@@ -245,11 +247,7 @@ func (s *staticRenamer) Initialize(conf *config.Config) {
 }
 
 func (s staticRenamer) CanRename(desktop *monitors.Desktop, desktopIdx int) bool {
-	if desktopIdx >= len(s.names) {
-		return false
-	}
-
-	return true
+	return desktopIdx < len(s.names)
 }
 
 func (s staticRenamer) Rename(desktop *monitors.Desktop, desktopIdx int) bool {
@@ -269,14 +267,17 @@ func (s staticRenamer) Rename(desktop *monitors.Desktop, desktopIdx int) bool {
 func (c *clientRenamer) Initialize(conf *config.Config) {
 	c.max_length = conf.MaxLength
 	c.unique_name = conf.UniqueName
+	c.ignore = conf.IgnoreClients
 }
+
 func (c clientRenamer) CanRename(desktop *monitors.Desktop, desktopIdx int) bool {
-	return len(desktop.Clients().Names(false)) > 0
+	return len(desktop.Clients().Names(false, []string{})) > 0
 }
+
 func (c clientRenamer) Rename(desktop *monitors.Desktop, desktopIdx int) bool {
 	name := strconv.Itoa(desktopIdx+1) + " "
 
-	client_names := strings.Join(desktop.Clients().Names(c.unique_name), " ")
+	client_names := strings.Join(desktop.Clients().Names(c.unique_name, c.ignore), " ")
 	if len(client_names) > c.max_length {
 		runes := []rune(client_names)
 		if len(runes) > c.max_length {
@@ -321,6 +322,7 @@ func (n numericRenamer) Rename(desktop *monitors.Desktop, desktopIdx int) bool {
 func (c *classifiedRenamer) Initialize(conf *config.Config) {
 	c.priorityMap = make(map[string]classification)
 	c.unique_name = conf.UniqueName
+	c.ignore = conf.IgnoreClients
 	priority := 0
 
 	for _, classMap := range conf.Names.Classified {
@@ -336,7 +338,7 @@ func (c *classifiedRenamer) Initialize(conf *config.Config) {
 }
 
 func (c classifiedRenamer) CanRename(desktop *monitors.Desktop, desktopIdx int) bool {
-	for _, name := range desktop.Clients().Names(true) {
+	for _, name := range desktop.Clients().Names(true, []string{}) {
 		if _, ok := c.priorityMap[name]; ok {
 			return true
 		}
@@ -348,7 +350,7 @@ func (c classifiedRenamer) CanRename(desktop *monitors.Desktop, desktopIdx int) 
 func (c classifiedRenamer) Rename(desktop *monitors.Desktop, desktopIdx int) bool {
 	classifiedName := strconv.Itoa(desktopIdx + 1)
 
-	for _, name := range desktop.Clients().Names(c.unique_name) {
+	for _, name := range desktop.Clients().Names(c.unique_name, c.ignore) {
 		class, ok := c.priorityMap[name]
 		if !ok {
 			classifiedName += " " + name

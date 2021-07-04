@@ -57,12 +57,14 @@ func newClients(nodes []*Node) (clients Clients) {
 	return clients
 }
 
-func (c Clients) Names(unique_names bool) (names []string) {
+func (c Clients) Names(unique_names bool, ignore []string) (names []string) {
 	names = make([]string, 0, len(c.clients))
 
 	for key, count := range c.clients {
 		for count > 0 {
-			names = append(names, key)
+			if !contains(ignore, key) {
+				names = append(names, key)
+			}
 			count--
 		}
 	}
